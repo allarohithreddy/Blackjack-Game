@@ -6,6 +6,7 @@ import {
   GameSettings,
   GameStats,
   Hand,
+  TablePlayer,
   HandResultHistory,
   StrategyAdvice,
 } from '../types/blackjack';
@@ -74,6 +75,29 @@ export function useBlackjack() {
     status: 'betting',
     isDoubled: false,
     isSplitHand: false,
+  });
+
+  // Table AI seated players (matching reference image)
+  const [bot1, setBot1] = useState<TablePlayer>({
+    id: 'bot-1',
+    name: 'Bee',
+    avatar: '🐝',
+    bankroll: 1000,
+    currentBet: 25,
+    cards: [],
+    status: 'betting',
+    isTurn: false,
+  });
+
+  const [bot2, setBot2] = useState<TablePlayer>({
+    id: 'bot-2',
+    name: 'Milo',
+    avatar: '🥳',
+    bankroll: 1000,
+    currentBet: 50,
+    cards: [],
+    status: 'betting',
+    isTurn: false,
   });
 
   // UI & Settlement notifications
@@ -251,6 +275,8 @@ export function useBlackjack() {
     setRoundMessage(null);
     setRoundPayout(0);
     setRoundNetProfit(0);
+    setBot1((prev) => ({ ...prev, cards: [], status: 'betting' }));
+    setBot2((prev) => ({ ...prev, cards: [], status: 'betting' }));
     setPhase('BETTING');
   }, []);
 
@@ -269,7 +295,27 @@ export function useBlackjack() {
     // Prepare shoe
     let activeShoe = ensureShoeCapacity(shoe);
 
-    // Deal sequence: Player 1, Dealer 1 (up), Player 2, Dealer 2 (hole card)
+    // Deal sequence: Bot 1, Player, Bot 2, Dealer (1 up, 1 down)
+    let b1Cards: Card[] = [];
+    let b2Cards: Card[] = [];
+
+    if (settings.multiplayerBots) {
+      const b1c1 = drawCard(activeShoe, true);
+      activeShoe = b1c1.remainingShoe;
+      const b1c2 = drawCard(activeShoe, true);
+      activeShoe = b1c2.remainingShoe;
+      b1Cards = [b1c1.card, b1c2.card];
+
+      const b2c1 = drawCard(activeShoe, true);
+      activeShoe = b2c1.remainingShoe;
+      const b2c2 = drawCard(activeShoe, true);
+      activeShoe = b2c2.remainingShoe;
+      b2Cards = [b2c1.card, b2c2.card];
+
+      setBot1((prev) => ({ ...prev, cards: b1Cards, status: 'playing' }));
+      setBot2((prev) => ({ ...prev, cards: b2Cards, status: 'playing' }));
+    }
+
     const pCard1 = drawCard(activeShoe, true);
     activeShoe = pCard1.remainingShoe;
 
@@ -285,10 +331,16 @@ export function useBlackjack() {
     setShoe(activeShoe);
 
     // Update Hi-Lo count for visible dealt cards
-    const initialHiLo =
+    let initialHiLo =
       getCardHiLoValue(pCard1.card) +
       getCardHiLoValue(dCard1.card) +
       getCardHiLoValue(pCard2.card);
+
+    if (settings.multiplayerBots) {
+      b1Cards.forEach((c) => (initialHiLo += getCardHiLoValue(c)));
+      b2Cards.forEach((c) => (initialHiLo += getCardHiLoValue(c)));
+    }
+
     setRunningCount((prev) => prev + initialHiLo);
 
     // Evaluate Perfect Pairs Side Bet
@@ -528,6 +580,39 @@ export function useBlackjack() {
       setBankroll((prev) => prev + totalPayout);
       setRoundPayout(totalPayout);
       setRoundNetProfit(netProfit);
+
+      // Settle Bot Table players if enabled
+      if (settings.multiplayerBots) {
+        setBot1((prev) => {
+          if (prev.cards.length === 0) return prev;
+          const evalRes = evaluateHandOutcome(
+            { id: prev.id, cards: prev.cards, bet: prev.currentBet, status: 'standing', isDoubled: false, isSplitHand: false },
+            finalDealerHand
+          );
+          const payout = Math.floor(prev.currentBet * evalRes.payoutMultiplier);
+          const profit = payout - prev.currentBet;
+          return {
+            ...prev,
+            bankroll: Math.max(0, prev.bankroll + profit),
+            status: evalRes.outcome === 'win' ? 'won' : evalRes.outcome === 'blackjack' ? 'blackjack' : evalRes.outcome === 'push' ? 'push' : 'lost',
+          };
+        });
+
+        setBot2((prev) => {
+          if (prev.cards.length === 0) return prev;
+          const evalRes = evaluateHandOutcome(
+            { id: prev.id, cards: prev.cards, bet: prev.currentBet, status: 'standing', isDoubled: false, isSplitHand: false },
+            finalDealerHand
+          );
+          const payout = Math.floor(prev.currentBet * evalRes.payoutMultiplier);
+          const profit = payout - prev.currentBet;
+          return {
+            ...prev,
+            bankroll: Math.max(0, prev.bankroll + profit),
+            status: evalRes.outcome === 'win' ? 'won' : evalRes.outcome === 'blackjack' ? 'blackjack' : evalRes.outcome === 'push' ? 'push' : 'lost',
+          };
+        });
+      }
 
       // Play outcome audio
       if (outcomeResult === 'blackjack') {
@@ -953,6 +1038,8 @@ export function useBlackjack() {
     sideBetProfit,
     insuranceBet,
     runningCount,
+    bot1,
+    bot2,
     playerHands,
     activeHandIndex,
     dealerHand,

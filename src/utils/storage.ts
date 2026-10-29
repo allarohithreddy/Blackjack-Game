@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   cardCountingEnabled: false,
   tableTheme: 'emerald',
   fastDealing: false,
+  multiplayerBots: true,
 };
 
 export function loadBankroll(): number {

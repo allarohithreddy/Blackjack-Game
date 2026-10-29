@@ -35,13 +35,26 @@ export interface Hand {
   isSplitHand: boolean;
 }
 
+export interface TablePlayer {
+  id: string;
+  name: string;
+  avatar: string;
+  bankroll: number;
+  currentBet: number;
+  cards: Card[];
+  status: HandStatus;
+  isTurn: boolean;
+}
+
 export type GamePhase =
   | 'BETTING'        // Placing bets
   | 'DEALING'        // Initial card deal animation
+  | 'BOT1_TURN'      // Seat 1 plays
+  | 'PLAYER_TURN'    // Human player makes decisions
+  | 'BOT2_TURN'      // Seat 2 plays
   | 'INSURANCE'      // Dealer shows Ace, player chooses insurance
-  | 'PLAYER_TURN'    // Player makes decisions (hit, stand, double, split, surrender)
   | 'DEALER_TURN'    // Dealer reveals hole card and draws to >=17
-  | 'ROUND_OVER';    // Results evaluated, payout animations, ready for next round
+  | 'ROUND_OVER';    // Results evaluated, ready for next round
 
 export type StrategyAction = 'H' | 'S' | 'D' | 'Ds' | 'P' | 'Rh';
 
@@ -92,4 +105,5 @@ export interface GameSettings {
   cardCountingEnabled: boolean; // Hi-Lo card counting HUD
   tableTheme: TableTheme; // Table felt color
   fastDealing: boolean;
+  multiplayerBots: boolean; // Enable AI players seated at table (like reference)
 }
