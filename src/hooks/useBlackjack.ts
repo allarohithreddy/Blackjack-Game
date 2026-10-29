@@ -21,6 +21,8 @@ import {
   evaluateHandOutcome,
 } from '../utils/hand';
 import { getBasicStrategyAdvice } from '../utils/strategy';
+import { getCardHiLoValue } from '../utils/cardCounting';
+import { evaluatePerfectPairs } from '../utils/sideBets';
 import { sound } from '../utils/sound';
 import {
   loadBankroll,
@@ -51,11 +53,16 @@ export function useBlackjack() {
   const [phase, setPhase] = useState<GamePhase>('BETTING');
   const [shoe, setShoe] = useState<Card[]>(() => createShoe(settings.deckCount));
   const [totalCardsInShoe, setTotalCardsInShoe] = useState<number>(settings.deckCount * 52);
+  const [runningCount, setRunningCount] = useState<number>(0);
 
   // Betting state
   const [currentBet, setCurrentBet] = useState<number>(0);
   const [lastBet, setLastBet] = useState<number>(0);
+  const [sideBet, setSideBet] = useState<number>(0);
+  const [lastSideBet, setLastSideBet] = useState<number>(0);
   const [insuranceBet, setInsuranceBet] = useState<number>(0);
+  const [sideBetMessage, setSideBetMessage] = useState<string | null>(null);
+  const [sideBetProfit, setSideBetProfit] = useState<number>(0);
 
   // Hands state
   const [playerHands, setPlayerHands] = useState<Hand[]>([]);
@@ -120,6 +127,7 @@ export function useBlackjack() {
         setIsReshuffling(true);
         const newShoe = createShoe(settings.deckCount);
         setTotalCardsInShoe(settings.deckCount * 52);
+        setRunningCount(0);
         setTimeout(() => setIsReshuffling(false), 1200);
         return newShoe;
       }
@@ -134,6 +142,7 @@ export function useBlackjack() {
     const newShoe = createShoe(settings.deckCount);
     setShoe(newShoe);
     setTotalCardsInShoe(settings.deckCount * 52);
+    setRunningCount(0);
     setTimeout(() => setIsReshuffling(false), 800);
   }, [settings.deckCount]);
 
@@ -164,16 +173,23 @@ export function useBlackjack() {
 
   // Betting Actions
   const addChip = useCallback(
-    (chipValue: number) => {
+    (chipValue: number, isSideBet: boolean = false) => {
       if (phase !== 'BETTING' && phase !== 'ROUND_OVER') return;
       if (bankroll < chipValue) return;
-      if (currentBet + chipValue > MAX_BET) return;
 
-      sound.playChip();
-      setBankroll((prev) => prev - chipValue);
-      setCurrentBet((prev) => prev + chipValue);
+      if (isSideBet) {
+        if (sideBet + chipValue > 250) return;
+        sound.playChip();
+        setBankroll((prev) => prev - chipValue);
+        setSideBet((prev) => prev + chipValue);
+      } else {
+        if (currentBet + chipValue > MAX_BET) return;
+        sound.playChip();
+        setBankroll((prev) => prev - chipValue);
+        setCurrentBet((prev) => prev + chipValue);
+      }
     },
-    [phase, bankroll, currentBet]
+    [phase, bankroll, currentBet, sideBet]
   );
 
   const clearBet = useCallback(() => {
@@ -184,6 +200,15 @@ export function useBlackjack() {
     setBankroll((prev) => prev + currentBet);
     setCurrentBet(0);
   }, [phase, currentBet]);
+
+  const clearSideBet = useCallback(() => {
+    if (phase !== 'BETTING' && phase !== 'ROUND_OVER') return;
+    if (sideBet === 0) return;
+
+    sound.playClick();
+    setBankroll((prev) => prev + sideBet);
+    setSideBet(0);
+  }, [phase, sideBet]);
 
   const doubleCurrentBet = useCallback(() => {
     if (phase !== 'BETTING' && phase !== 'ROUND_OVER') return;
@@ -221,6 +246,8 @@ export function useBlackjack() {
     });
     setActiveHandIndex(0);
     setInsuranceBet(0);
+    setSideBet(0);
+    setSideBetMessage(null);
     setRoundMessage(null);
     setRoundPayout(0);
     setRoundNetProfit(0);
@@ -237,6 +264,7 @@ export function useBlackjack() {
     setRoundPayout(0);
     setRoundNetProfit(0);
     setLastBet(currentBet);
+    setLastSideBet(sideBet);
 
     // Prepare shoe
     let activeShoe = ensureShoeCapacity(shoe);
@@ -255,6 +283,33 @@ export function useBlackjack() {
     activeShoe = dCard2.remainingShoe;
 
     setShoe(activeShoe);
+
+    // Update Hi-Lo count for visible dealt cards
+    const initialHiLo =
+      getCardHiLoValue(pCard1.card) +
+      getCardHiLoValue(dCard1.card) +
+      getCardHiLoValue(pCard2.card);
+    setRunningCount((prev) => prev + initialHiLo);
+
+    // Evaluate Perfect Pairs Side Bet
+    if (sideBet > 0) {
+      const pairsEval = evaluatePerfectPairs(pCard1.card, pCard2.card);
+      if (pairsEval.outcome !== 'loss') {
+        const profit = sideBet * pairsEval.multiplier;
+        const totalReturn = sideBet + profit;
+        setBankroll((prev) => prev + totalReturn);
+        setSideBetProfit(profit);
+        sound.playWin();
+        triggerConfetti();
+        setSideBetMessage(`${pairsEval.label} (+${profit})`);
+      } else {
+        setSideBetProfit(-sideBet);
+        setSideBetMessage(null);
+      }
+    } else {
+      setSideBetProfit(0);
+      setSideBetMessage(null);
+    }
 
     const initialPlayerCards = [pCard1.card, pCard2.card];
     const initialDealerCards = [dCard1.card, dCard2.card];
@@ -528,11 +583,15 @@ export function useBlackjack() {
         dealerScore: dScore,
         playerOutcome: outcomeResult,
         playerHandsCount: updatedHands.length,
+        playerCards: updatedHands[0]?.cards || [],
+        dealerCards: finalDealerHand.cards || [],
+        sideBet: sideBet,
+        sideBetProfit: sideBetProfit,
       };
 
       setHistory((prev) => [historyEntry, ...prev.slice(0, 29)]);
     },
-    [bankroll, triggerConfetti]
+    [bankroll, sideBet, sideBetProfit, triggerConfetti]
   );
 
   // DEALER TURN EXECUTION
@@ -540,7 +599,12 @@ export function useBlackjack() {
     (currentHands: Hand[]) => {
       setPhase('DEALER_TURN');
 
-      // First, reveal the dealer's hidden hole card
+      // First, reveal the dealer's hidden hole card and add to count
+      const holeCard = dealerHand.cards.find((c) => !c.isFaceUp);
+      if (holeCard) {
+        setRunningCount((prev) => prev + getCardHiLoValue(holeCard));
+      }
+
       let revealedCards = dealerHand.cards.map((c) => ({ ...c, isFaceUp: true }));
       let activeShoe = [...shoe];
 
@@ -580,6 +644,7 @@ export function useBlackjack() {
           revealedCards = [...revealedCards, drawn.card];
 
           setShoe(activeShoe);
+          setRunningCount((prev) => prev + getCardHiLoValue(drawn.card));
           setDealerHand((prev) => ({
             ...prev,
             cards: revealedCards,
@@ -620,6 +685,7 @@ export function useBlackjack() {
     const drawn = drawCard(activeShoe, true);
     activeShoe = drawn.remainingShoe;
     setShoe(activeShoe);
+    setRunningCount((prev) => prev + getCardHiLoValue(drawn.card));
 
     const newCards = [...currentHand.cards, drawn.card];
     const newScore = calculateHandScore(newCards);
@@ -682,6 +748,7 @@ export function useBlackjack() {
     const drawn = drawCard(activeShoe, true);
     activeShoe = drawn.remainingShoe;
     setShoe(activeShoe);
+    setRunningCount((prev) => prev + getCardHiLoValue(drawn.card));
 
     const newCards = [...currentHand.cards, drawn.card];
     const newScore = calculateHandScore(newCards);
@@ -730,6 +797,7 @@ export function useBlackjack() {
     activeShoe = cardForH2.remainingShoe;
 
     setShoe(activeShoe);
+    setRunningCount((prev) => prev + getCardHiLoValue(cardForH1.card) + getCardHiLoValue(cardForH2.card));
 
     const isSplitAces = currentHand.cards[0].rank === 'A';
 
@@ -879,7 +947,12 @@ export function useBlackjack() {
     totalCardsInShoe,
     currentBet,
     lastBet,
+    sideBet,
+    lastSideBet,
+    sideBetMessage,
+    sideBetProfit,
     insuranceBet,
+    runningCount,
     playerHands,
     activeHandIndex,
     dealerHand,
@@ -897,6 +970,7 @@ export function useBlackjack() {
     // Actions
     addChip,
     clearBet,
+    clearSideBet,
     doubleCurrentBet,
     allInBet,
     dealHand,

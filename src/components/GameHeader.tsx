@@ -10,6 +10,7 @@ import {
   Settings,
   PlusCircle,
   Layers,
+  Calculator,
 } from 'lucide-react';
 
 interface GameHeaderProps {
@@ -18,8 +19,10 @@ interface GameHeaderProps {
   totalCards: number;
   soundEnabled: boolean;
   hintsEnabled: boolean;
+  cardCountingEnabled: boolean;
   onToggleSound: () => void;
   onToggleHints: () => void;
+  onToggleCardCounting: () => void;
   onOpenStats: () => void;
   onOpenHistory: () => void;
   onOpenRules: () => void;
@@ -33,8 +36,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   totalCards,
   soundEnabled,
   hintsEnabled,
+  cardCountingEnabled,
   onToggleSound,
   onToggleHints,
+  onToggleCardCounting,
   onOpenStats,
   onOpenHistory,
   onOpenRules,
@@ -87,6 +92,20 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Action Icons Toolbar */}
       <div className="flex items-center gap-1 sm:gap-2">
+        {/* Card Counting HUD Toggle */}
+        <button
+          type="button"
+          onClick={onToggleCardCounting}
+          className={`p-2 rounded-xl border transition ${
+            cardCountingEnabled
+              ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_12px_rgba(234,179,8,0.2)]'
+              : 'bg-zinc-900 text-slate-500 border-zinc-800 hover:text-slate-300'
+          }`}
+          title={cardCountingEnabled ? 'Hide Card Counting HUD' : 'Show Card Counting HUD'}
+        >
+          <Calculator className="w-4 h-4" />
+        </button>
+
         {/* Hints Toggle */}
         <button
           type="button"

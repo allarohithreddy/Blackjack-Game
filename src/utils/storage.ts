@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   soundEnabled: true,
   soundVolume: 0.6,
   hintsEnabled: true,
+  cardCountingEnabled: false,
+  tableTheme: 'emerald',
   fastDealing: false,
 };
 

@@ -7,6 +7,7 @@ import { PlayerHand } from './components/PlayerHand';
 import { BettingArea } from './components/BettingArea';
 import { ActionControls } from './components/ActionControls';
 import { StrategyAdvisor } from './components/StrategyAdvisor';
+import { CardCountingHUD } from './components/CardCountingHUD';
 import { GameBanner } from './components/GameBanner';
 import { StatsModal } from './components/StatsModal';
 import { HistoryModal } from './components/HistoryModal';
@@ -37,8 +38,12 @@ export const App: React.FC = () => {
         totalCards={bj.totalCardsInShoe}
         soundEnabled={bj.settings.soundEnabled}
         hintsEnabled={bj.settings.hintsEnabled}
+        cardCountingEnabled={bj.settings.cardCountingEnabled}
         onToggleSound={() => bj.updateSettings({ soundEnabled: !bj.settings.soundEnabled })}
         onToggleHints={() => bj.updateSettings({ hintsEnabled: !bj.settings.hintsEnabled })}
+        onToggleCardCounting={() =>
+          bj.updateSettings({ cardCountingEnabled: !bj.settings.cardCountingEnabled })
+        }
         onOpenStats={() => setIsStatsOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenRules={() => setIsRulesOpen(true)}
@@ -46,8 +51,8 @@ export const App: React.FC = () => {
         onReloadBankroll={bj.resetBankroll}
       />
 
-      {/* CASINO TABLE FELT */}
-      <TableFelt>
+      {/* CASINO TABLE FELT WITH CUSTOMIZABLE THEME */}
+      <TableFelt theme={bj.settings.tableTheme}>
         {/* TOP SECTION: DEALER HAND */}
         <div className="w-full flex justify-center py-2">
           {bj.dealerHand.cards.length > 0 ? (
@@ -65,13 +70,29 @@ export const App: React.FC = () => {
           )}
         </div>
 
-        {/* MIDDLE SECTION: STRATEGY ADVICE, ROUND BANNER, ANNOUNCEMENTS */}
-        <div className="w-full flex flex-col items-center justify-center my-auto space-y-3 py-2 z-20">
+        {/* MIDDLE SECTION: CARD COUNTING HUD, STRATEGY ADVICE, ROUND BANNER */}
+        <div className="w-full flex flex-col items-center justify-center my-auto space-y-2 py-2 z-20">
+          {/* Real-time Hi-Lo Card Counting Trainer */}
+          <CardCountingHUD
+            runningCount={bj.runningCount}
+            cardsRemaining={bj.cardsRemaining}
+            enabled={bj.settings.cardCountingEnabled}
+          />
+
+          {/* Side Bet Announcement */}
+          {bj.sideBetMessage && (
+            <div className="bg-purple-950/90 border border-purple-500/80 text-purple-200 px-4 py-1.5 rounded-full text-xs font-black shadow-lg animate-bounce-short">
+              ✨ {bj.sideBetMessage}
+            </div>
+          )}
+
+          {/* Mathematical Strategy Advisor */}
           <StrategyAdvisor
             advice={bj.currentAdvice}
             enabled={bj.settings.hintsEnabled}
           />
 
+          {/* Round Outcome & Next Hand Action */}
           <GameBanner
             roundOver={isRoundOver}
             roundMessage={bj.roundMessage}
@@ -105,10 +126,12 @@ export const App: React.FC = () => {
           {isBetting ? (
             <BettingArea
               currentBet={bj.currentBet}
+              sideBet={bj.sideBet}
               bankroll={bj.bankroll}
               lastBet={bj.lastBet}
               onAddChip={bj.addChip}
               onClearBet={bj.clearBet}
+              onClearSideBet={bj.clearSideBet}
               onDoubleBet={bj.doubleCurrentBet}
               onAllIn={bj.allInBet}
               onDeal={bj.dealHand}

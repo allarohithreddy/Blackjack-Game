@@ -1,6 +1,6 @@
 import React from 'react';
-import { GameSettings } from '../types/blackjack';
-import { X, Settings, RefreshCw } from 'lucide-react';
+import { GameSettings, TableTheme } from '../types/blackjack';
+import { X, Settings, RefreshCw, Palette, Calculator } from 'lucide-react';
 import { DEFAULT_INITIAL_BANKROLL } from '../constants/rules';
 
 interface SettingsModalProps {
@@ -11,6 +11,13 @@ interface SettingsModalProps {
   onResetBankroll: () => void;
   onReshuffleShoe: () => void;
 }
+
+const THEME_OPTIONS: { id: TableTheme; label: string; colorClass: string }[] = [
+  { id: 'emerald', label: 'Emerald Felt', colorClass: 'bg-emerald-700 border-emerald-400' },
+  { id: 'royal-blue', label: 'Monte Carlo Blue', colorClass: 'bg-blue-800 border-blue-400' },
+  { id: 'burgundy', label: 'Macau Burgundy', colorClass: 'bg-rose-900 border-rose-400' },
+  { id: 'midnight', label: 'Midnight Onyx', colorClass: 'bg-zinc-800 border-zinc-400' },
+];
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -24,7 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-amber-500/40 rounded-2xl w-full max-w-md p-5 shadow-2xl text-slate-100 flex flex-col space-y-4">
+      <div className="bg-zinc-900 border border-amber-500/40 rounded-2xl w-full max-w-md p-5 shadow-2xl text-slate-100 flex flex-col space-y-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
@@ -44,6 +51,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Settings Options */}
         <div className="space-y-4 text-xs">
+          {/* Table Felt Theme */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-slate-200 font-semibold">
+              <Palette className="w-3.5 h-3.5 text-amber-400" />
+              <span>Table Felt Theme</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {THEME_OPTIONS.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => onUpdateSettings({ tableTheme: theme.id })}
+                  className={`flex items-center gap-2 p-2 rounded-xl border text-left transition ${
+                    settings.tableTheme === theme.id
+                      ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_12px_rgba(234,179,8,0.2)] font-bold text-white'
+                      : 'border-white/10 bg-black/40 hover:bg-black/60 text-slate-400'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full border ${theme.colorClass}`} />
+                  <span className="text-[11px] truncate">{theme.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Hi-Lo Card Counting Coach */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex flex-col">
+              <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                <Calculator className="w-3.5 h-3.5 text-amber-400" />
+                Hi-Lo Card Counting HUD
+              </span>
+              <span className="text-[11px] text-slate-400">
+                Displays real-time Running & True Counts
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onUpdateSettings({ cardCountingEnabled: !settings.cardCountingEnabled })}
+              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                settings.cardCountingEnabled ? 'bg-amber-500' : 'bg-zinc-700'
+              }`}
+            >
+              <div
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                  settings.cardCountingEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Deck Count */}
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
@@ -133,29 +191,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
                   settings.soundEnabled ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Fast Dealing */}
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="font-semibold text-slate-200">Fast Deal Animations</span>
-              <span className="text-[11px] text-slate-400">
-                Speeds up card deal sequence
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onUpdateSettings({ fastDealing: !settings.fastDealing })}
-              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                settings.fastDealing ? 'bg-amber-500' : 'bg-zinc-700'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  settings.fastDealing ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>

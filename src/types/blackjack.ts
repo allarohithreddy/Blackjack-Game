@@ -44,12 +44,13 @@ export type GamePhase =
   | 'ROUND_OVER';    // Results evaluated, payout animations, ready for next round
 
 export type StrategyAction = 'H' | 'S' | 'D' | 'Ds' | 'P' | 'Rh';
-// H: Hit, S: Stand, D: Double if allowed else Hit, Ds: Double if allowed else Stand, P: Split, Rh: Surrender if allowed else Hit
 
 export interface StrategyAdvice {
   action: 'HIT' | 'STAND' | 'DOUBLE' | 'SPLIT' | 'SURRENDER';
   explanation: string;
 }
+
+export type SideBetOutcome = 'perfect_pair' | 'colored_pair' | 'mixed_pair' | 'loss' | null;
 
 export interface HandResultHistory {
   id: string;
@@ -61,6 +62,10 @@ export interface HandResultHistory {
   dealerScore: number;
   playerOutcome: 'win' | 'loss' | 'push' | 'blackjack' | 'surrender';
   playerHandsCount: number;
+  playerCards: Card[];
+  dealerCards: Card[];
+  sideBet?: number;
+  sideBetProfit?: number;
 }
 
 export interface GameStats {
@@ -76,11 +81,15 @@ export interface GameStats {
   highestBankroll: number;
 }
 
+export type TableTheme = 'emerald' | 'royal-blue' | 'burgundy' | 'midnight';
+
 export interface GameSettings {
   deckCount: number; // 1, 2, 4, 6, 8
   dealerHitsSoft17: boolean; // default false (dealer stands on soft 17)
   soundEnabled: boolean;
   soundVolume: number; // 0 to 1
   hintsEnabled: boolean; // Basic strategy advisor
+  cardCountingEnabled: boolean; // Hi-Lo card counting HUD
+  tableTheme: TableTheme; // Table felt color
   fastDealing: boolean;
 }
