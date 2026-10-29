@@ -44,12 +44,12 @@ export const TableFelt: React.FC<TableFeltProps> = ({ children, theme = 'emerald
 
       {/* Casino curved arc lines and gold markings */}
       <div
-        className={`absolute inset-x-8 top-12 bottom-24 border-2 ${currentTheme.arcBorder} rounded-b-[180px] sm:rounded-b-[260px] pointer-events-none flex flex-col items-center justify-center transition-colors duration-500`}
+        className={`absolute inset-x-8 top-12 bottom-24 border-2 ${currentTheme.arcBorder} rounded-b-[180px] sm:rounded-b-[260px] pointer-events-none flex flex-col items-center pt-28 sm:pt-36 transition-colors duration-500`}
       >
-        {/* Table text in gold foil */}
-        <div className="text-center space-y-1.5 opacity-25 select-none pointer-events-none px-4">
+        {/* Table text in gold foil - placed authentically below dealer area */}
+        <div className="text-center space-y-1 opacity-25 select-none pointer-events-none px-4">
           <p
-            className={`font-casino font-black tracking-[0.25em] text-xs sm:text-sm md:text-base ${currentTheme.textColor} uppercase`}
+            className={`font-casino font-black tracking-[0.28em] text-xs sm:text-sm md:text-base ${currentTheme.textColor} uppercase`}
           >
             Blackjack Pays 3 to 2
           </p>

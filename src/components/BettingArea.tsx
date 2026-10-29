@@ -162,16 +162,16 @@ export const BettingArea: React.FC<BettingAreaProps> = ({
         </div>
       </div>
 
-      {/* Target Selector Banner */}
-      <div className="flex items-center gap-2 text-xs font-semibold">
-        <span className="text-slate-400">Clicking chips adds to:</span>
+      {/* Target Selector Pill */}
+      <div className="flex items-center gap-2 text-xs font-semibold bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
+        <span className="text-slate-400 text-[11px]">Bet Target:</span>
         <button
           type="button"
           onClick={() => setActiveTarget('main')}
-          className={`px-2.5 py-0.5 rounded-full border transition ${
+          className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
             activeTarget === 'main'
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500'
-              : 'bg-black/30 text-slate-400 border-white/10 hover:text-white'
+              ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
           Main Bet
@@ -179,10 +179,10 @@ export const BettingArea: React.FC<BettingAreaProps> = ({
         <button
           type="button"
           onClick={() => setActiveTarget('side')}
-          className={`px-2.5 py-0.5 rounded-full border transition ${
+          className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
             activeTarget === 'side'
-              ? 'bg-purple-500/20 text-purple-300 border-purple-400'
-              : 'bg-black/30 text-slate-400 border-white/10 hover:text-white'
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
         >
           Pairs Side Bet
